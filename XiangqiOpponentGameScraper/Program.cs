@@ -27,14 +27,14 @@ string GetPlayerName()
 	{
 		Console.WriteLine("Player name cannot be empty");
 
-		Exit();
+		PromptExit();
 	}
 
 	if (playerName.Length < 2)
 	{
 		Console.WriteLine("Player name must be at least 2 characters long");
 
-		Exit();
+		PromptExit();
 	}
 
 	Console.WriteLine();
@@ -51,24 +51,25 @@ string GetDownloadPath()
 	{
 		Console.WriteLine("Download path cannot be empty");
 
-		Exit();
+		PromptExit();
 	}
 
 	if (!Directory.Exists(downloadPath))
 	{
 		Console.WriteLine("Download path does not exist");
 
-		Exit();
+		PromptExit();
 	}
 
 	Console.WriteLine();
 	return downloadPath;
 }
 
-void Exit()
+void PromptExit(bool autoExit = false)
 {
 	Log("Press any key to exit...");
 	Console.ReadKey();
 
-	Environment.Exit(0);
+	if (autoExit)
+		Environment.Exit(0);
 }
