@@ -23,7 +23,7 @@ PromptExit();
 
 string GetPlayerName()
 {
-	Console.WriteLine("Enter the player name: ");
+	Console.WriteLine("Enter the player name (in Simplified Chinese): ");
 
 	string playerName = Console.ReadLine().Trim();
 
@@ -71,7 +71,7 @@ string GetDownloadPath()
 
 int GetTargetNumberOfGames()
 {
-	Console.WriteLine("Please enter the target number of the games you wish to scrap (between 1 - 500):");
+	Console.WriteLine("Please enter the target number of the games you wish to scrape (between 1 - 500):");
 	string target = Console.ReadLine().Trim();
 	const int DEFAULT_TARGET= 100;
 	const int MAX_TARGET = 500;
