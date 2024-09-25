@@ -1,25 +1,38 @@
 ﻿using System.Collections.Concurrent;
+using System.Text;
 using XiangqiOpponentGameScraper.Dtos;
 using XiangqiOpponentGameScraper.Services;
 using static XiangqiOpponentGameScraper.Services.Logger;
 
-string playerName = GetPlayerName();
-string downloadPath = GetDownloadPath();
-int targetNumberOfGames = GetTargetNumberOfGames();
+// Set the console encoding to UTF-8
+Console.OutputEncoding = Encoding.UTF8;
 
-BlockingCollection<GameRecordDto> gameRecords = [];
-string folderName = $"{playerName}_game_records_{DateTime.Now.Ticks}";
+try
+{
+	string playerName = GetPlayerName();
+	string downloadPath = GetDownloadPath();
+	int targetNumberOfGames = GetTargetNumberOfGames();
 
-GameScrapingService gameScrapingService = new(playerName, gameRecords, targetNumberOfGames);
-CreatingPgnService creatingPgnService = new(gameRecords, downloadPath, folderName);
+	BlockingCollection<GameRecordDto> gameRecords = [];
+	string folderName = $"{playerName}_game_records_{DateTime.Now.Ticks}";
 
-Task scrappingTask = Task.Run(gameScrapingService.ScrapeGamesAsync);
-Task creatingPgnFileTask = Task.Run(creatingPgnService.ProcessGameRecordsAsync);
+	GameScrapingService gameScrapingService = new(playerName, gameRecords, targetNumberOfGames);
+	CreatingPgnService creatingPgnService = new(gameRecords, downloadPath, folderName);
 
-await Task.WhenAll(scrappingTask, creatingPgnFileTask);
+	Task scrappingTask = Task.Run(gameScrapingService.ScrapeGamesAsync);
+	Task creatingPgnFileTask = Task.Run(creatingPgnService.ProcessGameRecordsAsync);
 
-Log("Finished!");
-PromptExit();
+	await Task.WhenAll(scrappingTask, creatingPgnFileTask);
+
+	Log("Finished!");
+	PromptExit();
+
+}
+catch (Exception ex)
+{
+	LogError($"An unexpected error occurred: {ex.Message}");
+	PromptExit(true);
+}
 
 string GetPlayerName()
 {
