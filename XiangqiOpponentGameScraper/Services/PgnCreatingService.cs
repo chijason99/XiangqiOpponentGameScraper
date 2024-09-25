@@ -1,5 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using System.ComponentModel;
 using System.Text;
 using XiangqiCore.Game;
 using XiangqiOpponentGameScraper.Dtos;
@@ -31,6 +30,8 @@ public class CreatingPgnService
 	{
 		Directory.CreateDirectory(FilePathPrefix);
 		int totalGames = 0;
+
+		using ProgressBar progressBar = new();
 
 		List<Task> tasks = [];
 
@@ -75,16 +76,14 @@ public class CreatingPgnService
 						.WithDpxqGameRecord(gameRecord.GameRecord)
 						.Build();
 
-					Log($"Creating PGN file for {fileName}...");
-
 					gameRecordBytes = gb2312Encoding.GetBytes(game.ExportGameAsPgnString());
 				}
 				catch (Exception ex)
 				{
 					fileName = $"{gameRecord.GameName}{TXT_EXTENSION}";
 
-					LogError($"Error creating PGN file for {gameRecord.GameName}: {ex.Message}");
-					LogColor("Writing the DPXQ game record to a txt file...");
+					LogError($"Error creating pgn file for {gameRecord.GameName}: {ex.Message}");
+					Log("Writing the DPXQ game record to a txt file instead...");
 
 					gameRecordBytes = gb2312Encoding.GetBytes(gameRecord.GameRecord);
 				}

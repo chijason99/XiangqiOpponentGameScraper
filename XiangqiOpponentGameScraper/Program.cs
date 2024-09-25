@@ -5,17 +5,21 @@ using static XiangqiOpponentGameScraper.Services.Logger;
 
 string playerName = GetPlayerName();
 string downloadPath = GetDownloadPath();
+int targetNumberOfGames = GetTargetNumberOfGames();
 
 BlockingCollection<GameRecordDto> gameRecords = [];
 string folderName = $"{playerName}_game_records_{DateTime.Now.Ticks}";
 
-GameScrapingService gameScrapingService = new(playerName, gameRecords);
+GameScrapingService gameScrapingService = new(playerName, gameRecords, targetNumberOfGames);
 CreatingPgnService creatingPgnService = new(gameRecords, downloadPath, folderName);
 
 Task scrappingTask = Task.Run(gameScrapingService.ScrapeGamesAsync);
 Task creatingPgnFileTask = Task.Run(creatingPgnService.ProcessGameRecordsAsync);
 
 await Task.WhenAll(scrappingTask, creatingPgnFileTask);
+
+Log("Finished!");
+PromptExit();
 
 string GetPlayerName()
 {
@@ -63,6 +67,29 @@ string GetDownloadPath()
 
 	Console.WriteLine();
 	return downloadPath;
+}
+
+int GetTargetNumberOfGames()
+{
+	Console.WriteLine("Please enter the target number of the games you wish to scrap (between 1 - 500):");
+	string target = Console.ReadLine().Trim();
+	const int DEFAULT_TARGET= 100;
+	const int MAX_TARGET = 500;
+
+	bool isNumber = int.TryParse(target, out int targetNumberOfGames );
+
+	if (string.IsNullOrWhiteSpace(target) || 
+		!isNumber || 
+		targetNumberOfGames <= 0 || 
+		targetNumberOfGames > MAX_TARGET)
+	{
+		Console.WriteLine("Invalid number provided. Will default to scrape 100 games.");
+
+		return DEFAULT_TARGET;
+	}
+
+	Console.WriteLine();
+	return targetNumberOfGames;
 }
 
 void PromptExit(bool autoExit = false)
