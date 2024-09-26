@@ -25,9 +25,7 @@ try
 
 	await Task.WhenAll(scrappingTask, creatingPgnFileTask);
 
-	Log("Finished!");
 	PromptExit();
-
 }
 catch (Exception ex)
 {
