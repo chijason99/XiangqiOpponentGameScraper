@@ -5,6 +5,7 @@ using XiangqiOpponentGameScraper.Services;
 using static XiangqiOpponentGameScraper.Services.Logger;
 
 // Set the console encoding to UTF-8
+Console.InputEncoding = Encoding.UTF8;
 Console.OutputEncoding = Encoding.UTF8;
 
 try
