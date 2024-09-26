@@ -106,7 +106,7 @@ int GetTargetNumberOfGames()
 
 void PromptExit(bool autoExit = false)
 {
-	Log("Press any key to exit...");
+	Console.WriteLine("Press any key to exit...");
 	Console.ReadKey();
 
 	if (autoExit)
