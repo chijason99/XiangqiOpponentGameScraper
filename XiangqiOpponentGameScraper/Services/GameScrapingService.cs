@@ -9,7 +9,7 @@ internal class GameScrapingService
 {
 	private const string DPXQ_URL = "http://www.dpxq.com/hldcg/search";
 
-    public GameScrapingService(string playerName, BlockingCollection<GameRecordDto> gameRecords, int targetNumberOfGames = 50)
+	public GameScrapingService(string playerName, BlockingCollection<GameRecordDto> gameRecords, int targetNumberOfGames = 50)
     {
 		ArgumentException.ThrowIfNullOrWhiteSpace(playerName, nameof(playerName));
 
@@ -77,7 +77,7 @@ internal class GameScrapingService
 				break;
 			}
 
-			foreach (var gameLocation in gameRows.Take(10))
+			foreach (var gameLocation in gameRows)
 			{
 				await gameLocation.ClickAsync();
 
@@ -90,7 +90,7 @@ internal class GameScrapingService
 					gameName = gameName.Replace(invalidChar, '_');
 				}
 
-				await page.WaitForTimeoutAsync(500);
+				await page.WaitForTimeoutAsync(300);
 
 				await page.FrameLocator("iframe[name=\"name_dhtmlxq_search_view\"]").GetByRole(AriaRole.Button, new() { Name = "导出" }).ClickAsync();
 				await page.FrameLocator("iframe[name=\"name_dhtmlxq_search_view\"]").GetByRole(AriaRole.Link, new() { Name = "文本" }).Last.ClickAsync();
@@ -106,6 +106,9 @@ internal class GameScrapingService
 
 				//Interlocked.Increment(ref TotalNumberOfRecords);
 				TotalNumberOfRecords++;
+
+				if (TotalNumberOfRecords >= TargetNumberOfGames)
+					break;
 			}
 
 			await page.FrameLocator("iframe[name=\"search_end_pos\"]").GetByRole(AriaRole.Link, new() { Name = ">", Exact = true }).ClickAsync();
@@ -118,5 +121,7 @@ internal class GameScrapingService
 		_gameRecords.CompleteAdding();
 
 		Log($"Total number of records found: {TotalNumberOfRecords}");
+
+		await page.CloseAsync();
 	}
 }
