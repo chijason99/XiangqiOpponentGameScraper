@@ -9,7 +9,6 @@ namespace XiangqiOpponentGameScraper.Services;
 public class CreatingPgnService
 {
 	private readonly SemaphoreSlim _semaphore = new(10, 10);
-	private readonly XiangqiBuilder _xiangqiBuilder = new();
 	private readonly BlockingCollection<GameRecordDto> _gameRecords;
 
 	private string _targetDirectory { get; set; }
@@ -30,8 +29,6 @@ public class CreatingPgnService
 	{
 		Directory.CreateDirectory(FilePathPrefix);
 		int totalGames = 0;
-
-		using ProgressBar progressBar = new();
 
 		List<Task> tasks = [];
 
@@ -65,10 +62,11 @@ public class CreatingPgnService
 			byte[] gameRecordBytes;
 
 			Encoding gb2312Encoding = CodePagesEncodingProvider.Instance.GetEncoding(936) ?? Encoding.UTF8;
+			XiangqiBuilder xiangqiBuilder = new();
 
 			try
 			{
-				XiangqiGame game = _xiangqiBuilder
+				XiangqiGame game = xiangqiBuilder
 					.WithDpxqGameRecord(gameRecord.GameRecord)
 					.Build();
 
@@ -79,15 +77,16 @@ public class CreatingPgnService
 				fileName = $"{gameRecord.GameName}{TXT_EXTENSION}";
 
 				LogError($"Error creating pgn file for {gameRecord.GameName}: {ex.Message}");
-				Log("Writing the DPXQ game record to a txt file instead...");
+				Log($"Writing the {gameRecord.GameName} to a txt file instead...");
 
 				gameRecordBytes = gb2312Encoding.GetBytes(gameRecord.GameRecord);
 			}
+
 			await _semaphore.WaitAsync(cancellationToken);
 
 			try
 			{
-				string filePath = Path.Combine(FilePathPrefix, fileName);
+				string filePath = Path.Combine(FilePathPrefix, SanitizeFileName(fileName));
 				await File.WriteAllBytesAsync(filePath, gameRecordBytes, cancellationToken);
 			}
 			finally
@@ -95,5 +94,15 @@ public class CreatingPgnService
 				_semaphore.Release();
 			}
 		});
+	}
+
+	private string SanitizeFileName(string fileName)
+	{
+		foreach (char c in Path.GetInvalidFileNameChars())
+		{
+			fileName = fileName.Replace(c, '_');
+		}
+
+		return fileName;
 	}
 }
