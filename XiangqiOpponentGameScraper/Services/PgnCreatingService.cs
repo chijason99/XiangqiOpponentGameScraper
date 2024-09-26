@@ -66,28 +66,27 @@ public class CreatingPgnService
 
 			Encoding gb2312Encoding = CodePagesEncodingProvider.Instance.GetEncoding(936) ?? Encoding.UTF8;
 
+			try
+			{
+				XiangqiGame game = _xiangqiBuilder
+					.WithDpxqGameRecord(gameRecord.GameRecord)
+					.Build();
+
+				gameRecordBytes = gb2312Encoding.GetBytes(game.ExportGameAsPgnString());
+			}
+			catch (Exception ex)
+			{
+				fileName = $"{gameRecord.GameName}{TXT_EXTENSION}";
+
+				LogError($"Error creating pgn file for {gameRecord.GameName}: {ex.Message}");
+				Log("Writing the DPXQ game record to a txt file instead...");
+
+				gameRecordBytes = gb2312Encoding.GetBytes(gameRecord.GameRecord);
+			}
 			await _semaphore.WaitAsync(cancellationToken);
 
 			try
 			{
-				try
-				{
-					XiangqiGame game = _xiangqiBuilder
-						.WithDpxqGameRecord(gameRecord.GameRecord)
-						.Build();
-
-					gameRecordBytes = gb2312Encoding.GetBytes(game.ExportGameAsPgnString());
-				}
-				catch (Exception ex)
-				{
-					fileName = $"{gameRecord.GameName}{TXT_EXTENSION}";
-
-					LogError($"Error creating pgn file for {gameRecord.GameName}: {ex.Message}");
-					Log("Writing the DPXQ game record to a txt file instead...");
-
-					gameRecordBytes = gb2312Encoding.GetBytes(gameRecord.GameRecord);
-				}
-
 				string filePath = Path.Combine(FilePathPrefix, fileName);
 				await File.WriteAllBytesAsync(filePath, gameRecordBytes, cancellationToken);
 			}
