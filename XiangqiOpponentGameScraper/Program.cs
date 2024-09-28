@@ -10,12 +10,14 @@ Console.OutputEncoding = Encoding.UTF8;
 
 try
 {
+	InstallChromiumForPlaywright();
+
 	string playerName = GetPlayerName();
 	string downloadPath = GetDownloadPath();
 	int targetNumberOfGames = GetTargetNumberOfGames();
 
 	BlockingCollection<GameRecordDto> gameRecords = [];
-	string folderName = $"{playerName}_game_records_{DateTime.Now.Ticks}";
+	string folderName = $"{playerName}_game_records_{DateTime.Now:yyyy-MM-dd_HH_mm_ss}";
 
 	GameScrapingService gameScrapingService = new(playerName, gameRecords, targetNumberOfGames);
 	CreatingPgnService creatingPgnService = new(gameRecords, downloadPath, folderName);
@@ -111,4 +113,17 @@ void PromptExit(bool autoExit = false)
 
 	if (autoExit)
 		Environment.Exit(0);
+}
+
+void InstallChromiumForPlaywright()
+{
+	Log("Installing Chromium for PlayWright...");
+
+	var exitCode = Microsoft.Playwright.Program.Main(["install", "chromium"]);
+
+	if (exitCode != 0)
+	{
+		LogError($"Playwright exited with code {exitCode}");
+		PromptExit();
+	}
 }

@@ -23,8 +23,6 @@ internal class GameScrapingService
     public string PlayerName { get; set; }
 
 	private readonly BlockingCollection<GameRecordDto> _gameRecords;
-
-
     public async Task ScrapeGamesAsync()
 	{
 		using IPlaywright playwright = await Playwright.CreateAsync();
