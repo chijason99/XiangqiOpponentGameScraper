@@ -1,5 +1,6 @@
 ﻿namespace XiangqiOpponentGameScraper.Services;
 
+// Credit to https://github.com/nilaoda/BBDown/blob/master/BBDown.Core/Logger.cs
 public static class Logger
 {
 	public static void Log(object text, bool enter = true)
