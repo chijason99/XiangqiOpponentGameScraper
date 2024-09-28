@@ -10,6 +10,8 @@ public class CreatingPgnService
 {
 	private readonly SemaphoreSlim _semaphore = new(10, 10);
 	private readonly BlockingCollection<GameRecordDto> _gameRecords;
+	private readonly GameScrapingService _gameScrapingService;
+	private ConsoleSpinner _spinner;
 
 	private string _targetDirectory { get; set; }
 	private string _folderName { get; set; }
@@ -18,8 +20,16 @@ public class CreatingPgnService
 	private const string TXT_EXTENSION = ".txt";
 	private string FilePathPrefix => Path.Combine(_targetDirectory, _folderName);
 
-	internal CreatingPgnService(BlockingCollection<GameRecordDto> gameRecords, string targetDirectory, string folderName)
+	internal CreatingPgnService(
+		GameScrapingService gameScrapingService,
+		BlockingCollection<GameRecordDto> gameRecords,
+		string targetDirectory,
+		string folderName)
 	{
+		_gameScrapingService = gameScrapingService;
+
+		gameScrapingService.ScrapeCompleted += StartSpinner;
+
 		_gameRecords = gameRecords;
 		_targetDirectory = targetDirectory;
 		_folderName = folderName;
@@ -50,6 +60,9 @@ public class CreatingPgnService
 		}
 
 		await Task.WhenAll(tasks);
+
+		StopSpinner();
+		CleanUpEvents();
 
 		LogColor($"Finished writing {totalGames} game records!");
 	}
@@ -104,5 +117,20 @@ public class CreatingPgnService
 		}
 
 		return fileName;
+	}
+
+	public void StartSpinner()
+	{
+		_spinner = new ConsoleSpinner();
+	}
+
+	public void StopSpinner()
+	{
+		_spinner.Dispose();
+	}
+
+	public void CleanUpEvents()
+	{
+		_gameScrapingService.ScrapeCompleted -= StartSpinner;
 	}
 }

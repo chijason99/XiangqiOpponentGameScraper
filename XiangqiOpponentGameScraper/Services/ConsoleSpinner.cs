@@ -1,13 +1,13 @@
 namespace XiangqiOpponentGameScraper.Services;
 
-public class ProgressBar : IDisposable
+public class ConsoleSpinner : IDisposable
 {
 	private const string animation = @"|/-\";
 	private readonly Timer timer;
 	private int animationIndex = 0;
 	private bool disposed = false;
 
-	public ProgressBar()
+	public ConsoleSpinner()
 	{
 		timer = new Timer(TimerHandler);
 		ResetTimer();

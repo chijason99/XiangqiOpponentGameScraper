@@ -20,7 +20,7 @@ try
 	string folderName = $"{playerName}_game_records_{DateTime.Now:yyyy-MM-dd_HH_mm_ss}";
 
 	GameScrapingService gameScrapingService = new(playerName, gameRecords, targetNumberOfGames);
-	CreatingPgnService creatingPgnService = new(gameRecords, downloadPath, folderName);
+	CreatingPgnService creatingPgnService = new(gameScrapingService, gameRecords, downloadPath, folderName);
 
 	Task scrappingTask = Task.Run(gameScrapingService.ScrapeGamesAsync);
 	Task creatingPgnFileTask = Task.Run(creatingPgnService.ProcessGameRecordsAsync);
@@ -120,6 +120,8 @@ void InstallChromiumForPlaywright()
 	Log("Installing Chromium for PlayWright...");
 
 	var exitCode = Microsoft.Playwright.Program.Main(["install", "chromium"]);
+
+	Console.WriteLine();
 
 	if (exitCode != 0)
 	{

@@ -23,7 +23,9 @@ internal class GameScrapingService
     public string PlayerName { get; set; }
 
 	private readonly BlockingCollection<GameRecordDto> _gameRecords;
-    public async Task ScrapeGamesAsync()
+	public event Action ScrapeCompleted;
+
+	public async Task ScrapeGamesAsync()
 	{
 		using IPlaywright playwright = await Playwright.CreateAsync();
 
@@ -119,6 +121,9 @@ internal class GameScrapingService
 		_gameRecords.CompleteAdding();
 
 		Log($"Total number of records found: {TotalNumberOfRecords}");
+		Log($"Converting scraped game records into PGN files...");
+
+		ScrapeCompleted();
 
 		await page.CloseAsync();
 	}
