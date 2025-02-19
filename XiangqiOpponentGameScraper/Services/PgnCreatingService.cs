@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
-using System.Text;
 using XiangqiCore.Game;
+using XiangqiCore.Move;
+using XiangqiCore.Services.PgnSaving;
 using XiangqiOpponentGameScraper.Dtos;
 using static XiangqiOpponentGameScraper.Services.Logger;
 
@@ -11,28 +12,33 @@ public class CreatingPgnService
 	private readonly SemaphoreSlim _semaphore = new(10, 10);
 	private readonly BlockingCollection<GameRecordDto> _gameRecords;
 	private readonly GameScrapingService _gameScrapingService;
+	private readonly IPgnSavingService _pgnSavingService;
 	private ConsoleSpinner _spinner;
 
 	private string _targetDirectory { get; set; }
 	private string _folderName { get; set; }
+	private MoveNotationType _moveNotationType { get; set; }
 
 	private const string PGN_EXTENSION = ".pgn";
-	private const string TXT_EXTENSION = ".txt";
 	private string FilePathPrefix => Path.Combine(_targetDirectory, _folderName);
 
 	internal CreatingPgnService(
 		GameScrapingService gameScrapingService,
 		BlockingCollection<GameRecordDto> gameRecords,
+		IPgnSavingService pgnSavingService,
 		string targetDirectory,
-		string folderName)
+		string folderName,
+		MoveNotationType moveNotationType)
 	{
 		_gameScrapingService = gameScrapingService;
+		_pgnSavingService = pgnSavingService;
 
 		gameScrapingService.ScrapeCompleted += StartSpinner;
 
 		_gameRecords = gameRecords;
 		_targetDirectory = targetDirectory;
 		_folderName = folderName;
+		_moveNotationType = moveNotationType;
 	}
 
 	public async Task ProcessGameRecordsAsync()
@@ -72,35 +78,28 @@ public class CreatingPgnService
 		await Parallel.ForEachAsync(batch, new ParallelOptions { MaxDegreeOfParallelism = 10 }, async (gameRecord, cancellationToken) =>
 		{
 			string fileName = $"{gameRecord.GameName}{PGN_EXTENSION}";
-			byte[] gameRecordBytes;
-
-			Encoding gb2312Encoding = CodePagesEncodingProvider.Instance.GetEncoding(936) ?? Encoding.UTF8;
-			XiangqiBuilder xiangqiBuilder = new();
-
+			
 			try
 			{
+				XiangqiBuilder xiangqiBuilder = new();
+
 				XiangqiGame game = xiangqiBuilder
 					.WithDpxqGameRecord(gameRecord.GameRecord)
 					.Build();
 
-				gameRecordBytes = gb2312Encoding.GetBytes(game.ExportGameAsPgnString());
+				await _semaphore.WaitAsync(cancellationToken);
+
+				string filePath = Path.Combine(FilePathPrefix, SanitizeFileName(fileName));
+
+				await _pgnSavingService.SaveAsync(
+					filePath, 
+					game, 
+					_moveNotationType, 
+					cancellationToken);
 			}
 			catch (Exception ex)
 			{
-				fileName = $"{gameRecord.GameName}{TXT_EXTENSION}";
-
-				LogError($"Error creating pgn file for {gameRecord.GameName}: {ex.Message}");
-				Log($"Writing the {gameRecord.GameName} to a txt file instead...");
-
-				gameRecordBytes = gb2312Encoding.GetBytes(gameRecord.GameRecord);
-			}
-
-			await _semaphore.WaitAsync(cancellationToken);
-
-			try
-			{
-				string filePath = Path.Combine(FilePathPrefix, SanitizeFileName(fileName));
-				await File.WriteAllBytesAsync(filePath, gameRecordBytes, cancellationToken);
+				LogError($"An unexpected error occurred while processing {fileName}");
 			}
 			finally
 			{

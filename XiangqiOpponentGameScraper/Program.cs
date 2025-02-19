@@ -1,5 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Text;
+using XiangqiCore.Move;
+using XiangqiCore.Services.PgnSaving;
 using XiangqiOpponentGameScraper.Dtos;
 using XiangqiOpponentGameScraper.Services;
 using static XiangqiOpponentGameScraper.Services.Logger;
@@ -15,12 +17,21 @@ try
 	string playerName = GetPlayerName();
 	string downloadPath = GetDownloadPath();
 	int targetNumberOfGames = GetTargetNumberOfGames();
+	MoveNotationType moveNotationType = GetMoveNotationType();
 
 	BlockingCollection<GameRecordDto> gameRecords = [];
 	string folderName = $"{playerName}_game_records_{DateTime.Now:yyyy-MM-dd_HH_mm_ss}";
 
 	GameScrapingService gameScrapingService = new(playerName, gameRecords, targetNumberOfGames);
-	CreatingPgnService creatingPgnService = new(gameScrapingService, gameRecords, downloadPath, folderName);
+	IPgnSavingService pgnSavingService = new DefaultPgnSavingService();
+
+	CreatingPgnService creatingPgnService = new(
+		gameScrapingService, 
+		gameRecords, 
+		pgnSavingService, 
+		downloadPath, 
+		folderName,
+		moveNotationType);
 
 	Task scrappingTask = Task.Run(gameScrapingService.ScrapeGamesAsync);
 	Task creatingPgnFileTask = Task.Run(creatingPgnService.ProcessGameRecordsAsync);
@@ -104,6 +115,26 @@ int GetTargetNumberOfGames()
 
 	Console.WriteLine();
 	return targetNumberOfGames;
+}
+
+MoveNotationType GetMoveNotationType()
+{
+	Console.WriteLine("Please enter the move notation type (0 - 3) you want on the PGN: (0 - English, 1 - Simplified Chinese, 2 - Traditional Chinese, 3 - UCCI)");
+
+	string moveNotationType = Console.ReadLine().Trim();
+
+	if (string.IsNullOrWhiteSpace(moveNotationType) ||
+		!int.TryParse(moveNotationType, out int moveNotationTypeInt) ||
+		moveNotationTypeInt < 0 ||
+		moveNotationTypeInt > 3)
+	{
+		Console.WriteLine("Invalid move notation type provided. Will default to Simplified Chinese.");
+		return MoveNotationType.SimplifiedChinese;
+	}
+
+	Console.WriteLine();
+
+	return (MoveNotationType)moveNotationTypeInt;
 }
 
 void PromptExit(bool autoExit = false)
